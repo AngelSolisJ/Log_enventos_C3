@@ -1,70 +1,101 @@
 import logging
-import datetime
 
-# --- CONFIGURACIÓN DEL SISTEMA DE LOGS ---
-# Esto crea el archivo 'seguridad_almacen.log' automáticamente
+
 logging.basicConfig(
-    filename='seguridad_almacen.log',
-    level=logging.INFO,
-    format='%(asctime)s | NIVEL: %(levelname)s | %(message)s',
+    filename='seguridad_almacen.log', 
+    level=logging.INFO, 
+    format='%(asctime)s | %(levelname)s | %(message)s', 
     datefmt='%d-%m-%Y %H:%M:%S'
 )
 
-# --- BASE DE DATOS SIMULADA ---
-inventario = {
-    "Laptop Gamer HP": 5,
-    "Monitor Samsung 24": 12,
-    "Teclado Mecánico": 8,
-    "Mouse Logitech": 20
+usuarios_validos = {
+    "Angel Solis": "1234",
+    "Sergio Plata": "0000",   
+    "Gael Torres": "9999"
 }
 
-def mostrar_menu():
-    print("\n" + "="*40)
-    print(" SISTEMA DE GESTIÓN DE INVENTARIO v2.0")
-    print("="*40)
-    print("1. Ver Inventario Actual")
-    print("2. DAR DE BAJA Producto (Requiere Firma)")
-    print("3. Salir")
+inventario = {
+    "Laptop HP Gamer": 10,
+    "iPhone 15 Pro": 15,
+    "AirPods Pro": 25,
+    "Cargador USB-C": 50
+}
+
+usuario_actual = None
+
+
+def login():
+    global usuario_actual
+    print("\n" + "="*45)
+    print("SISTEMA DE CONTROL DE INVENTARIOS")
+    print("="*45)
+    
+    user = input("Usuario: ")
+    password = input("Contraseña: ")
+    
+    if user in usuarios_validos and usuarios_validos[user] == password:
+        usuario_actual = user
+        print(f"\nBienvenido {usuario_actual}. Sesión iniciada.")
+        logging.info(f"ACCESO: El usuario '{usuario_actual}' ingresó al sistema.")
+        return True
+    else:
+        print("\nCredenciales inválidas.")
+        logging.warning(f"INTRUSIÓN: Intento fallido de acceso con usuario '{user}'.")
+        return False
 
 def ver_inventario():
-    print("\n--- STOCK EN ALMACÉN ---")
-    for producto, cantidad in inventario.items():
-        print(f" > {producto}: {cantidad} unidades")
-    # Registramos que alguien vio el stock (evento de bajo riesgo)
-    logging.info("Consulta general de inventario realizada.")
+    print("\n--- ESTADO DEL ALMACÉN ---")
+    print(f"{'PRODUCTO':<20} | {'CANTIDAD':<10}")
+    print("-" * 35)
+    for prod, cant in inventario.items():
+        print(f"{prod:<20} | {cant:<10}")
+    
+    logging.info(f"CONSULTA: {usuario_actual} revisó el inventario.")
 
-def eliminar_producto():
-    print("\n--- ¡ALERTA! ESTÁ EN ZONA DE EDICIÓN ---")
-    # Simulamos el login pidiendo el nombre
-    usuario_responsable = input("Ingrese su NOMBRE DE USUARIO para firmar la baja: ")
-    prod_a_borrar = input("Nombre exacto del producto a eliminar: ")
+def ajustar_stock():
+    print(f"\n--- MÓDULO DE SALIDA DE MERCANCÍA ---")
+    print(f"Usuario responsable: {usuario_actual}")
+    
+    prod = input("Nombre del producto a retirar: ")
+    
+    if prod in inventario:
+        try:
+            cantidad_actual = inventario[prod]
+            print(f"Stock actual de '{prod}': {cantidad_actual} unidades.")
+            
+            cantidad_retirar = int(input("¿Cuántas unidades vas a retirar?: "))
+            
+            if 0 < cantidad_retirar <= cantidad_actual:
+                inventario[prod] -= cantidad_retirar
+                print(f"Se han retirado {cantidad_retirar} unidades. Quedan {inventario[prod]}.")
+                
+                logging.warning(f"MOVIMIENTO DE STOCK: {usuario_actual} RESTÓ {cantidad_retirar} unidades de '{prod}'. (Stock restante: {inventario[prod]})")
+            
+            elif cantidad_retirar > cantidad_actual:
+                print("Error: No hay suficiente stock para retirar esa cantidad.")
+                logging.error(f"ERROR: {usuario_actual} intentó retirar más {prod} del existente.")
+            else:
+                print("Cantidad no válida.")
+                
+        except ValueError:
+            print("Error: Debes ingresar un número entero.")
+    else:
+        print("El producto no existe.")
 
-    if prod_a_borrar in inventario:
-        # Lógica de eliminación
-        del inventario[prod_a_borrar]
-        print(f"\n[ÉXITO] El producto '{prod_a_borrar}' ha sido eliminado de la BD.")
+if login():
+    while True:
+        print("\n--- MENÚ ---")
+        print("1. Ver Inventario")
+        print("2. Registrar Salida de Mercancía (Baja)")
+        print("3. Salir")
         
-        # --- AQUÍ OCURRE LA MAGIA DEL LOG ---
-        mensaje_log = f"USUARIO: {usuario_responsable} --> ELIMINÓ EL PRODUCTO: '{prod_a_borrar}'"
-        logging.warning(mensaje_log) # Usamos WARNING porque es una acción delicada
-    else:
-        print("\n[ERROR] Producto no encontrado.")
-        logging.error(f"Fallo de operación: {usuario_responsable} intentó borrar algo inexistente ({prod_a_borrar}).")
-
-# --- EJECUCIÓN DEL PROGRAMA ---
-logging.info("--- SISTEMA INICIADO ---")
-
-while True:
-    mostrar_menu()
-    opcion = input("\nSeleccione una opción: ")
-
-    if opcion == '1':
-        ver_inventario()
-    elif opcion == '2':
-        eliminar_producto()
-    elif opcion == '3':
-        print("Cerrando sistema...")
-        logging.info("--- SISTEMA APAGADO ---")
-        break
-    else:
-        print("Opción no válida.")
+        opcion = input("Elige: ")
+        
+        if opcion == '1':
+            ver_inventario()
+        elif opcion == '2':
+            ajustar_stock()
+        elif opcion == '3':
+            print("Saliendo...")
+            logging.info(f"SALIDA: {usuario_actual} cerró sesión.")
+            break
