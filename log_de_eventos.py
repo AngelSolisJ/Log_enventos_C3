@@ -11,7 +11,8 @@ logging.basicConfig(
 usuarios_validos = {
     "Angel Solis": "1234",
     "Sergio Plata": "0000",   
-    "Gael Torres": "9999"
+    "Gael Torres": "9999",
+    "Karen Moreno":"2040"
 }
 
 inventario = {
